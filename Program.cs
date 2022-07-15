@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MinimalAPI.Core.Data;
 using MinimalAPI.Core.Models;
+using MiniValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -47,9 +48,16 @@ app.MapGet("/provider/{id}", async (
 app.MapPost("/provider", async (
 	MinimalContextDb context,
 	Provider provider) =>
-{ 
+{
+	if (!MiniValidator.TryValidate(provider, out var errors))
+		return Results.ValidationProblem(errors);
+	
 	context.Providers.Add(provider);
 	var result = await context.SaveChangesAsync();
+
+	return result > 0
+		   ? Results.CreatedAtRoute("GetProviderById", new { id = provider.Id }, provider)
+		   : Results.BadRequest("An error occurs while saving the record.");
 })
 	.Produces<Provider>(StatusCodes.Status201Created)
 	.Produces(StatusCodes.Status400BadRequest)
