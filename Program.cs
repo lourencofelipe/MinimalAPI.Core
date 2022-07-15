@@ -90,4 +90,26 @@ app.MapPut("/provider/{id}", async (
 	.WithName("PutProvider")
 	.WithTags("Provider");
 
+
+app.MapDelete("/provider/{id}", async (
+	   Guid id,
+	   MinimalContextDb context) =>
+{
+	var provider = await context.Providers.FindAsync(id);
+	if (provider == null) return Results.NotFound();
+
+	context.Providers.Remove(provider);
+	var result = await context.SaveChangesAsync();
+
+	return result > 0
+		? Results.NoContent()
+		: Results.BadRequest("An error occurs while saving the record");
+
+}).Produces(StatusCodes.Status400BadRequest)
+   .Produces(StatusCodes.Status204NoContent)
+   .Produces(StatusCodes.Status404NotFound)
+   .RequireAuthorization("DeleteProvider")
+   .WithName("DeleteProvider")
+   .WithTags("Provider");
+
 app.Run();
