@@ -57,11 +57,37 @@ app.MapPost("/provider", async (
 
 	return result > 0
 		   ? Results.CreatedAtRoute("GetProviderById", new { id = provider.Id }, provider)
-		   : Results.BadRequest("An error occurs while saving the record.");
-})
+		   : Results.BadRequest("An error occurs while saving the record");
+
+}).ProducesValidationProblem()
 	.Produces<Provider>(StatusCodes.Status201Created)
 	.Produces(StatusCodes.Status400BadRequest)
 	.WithName("PostProvider")
+	.WithTags("Provider");
+
+
+app.MapPut("/provider/{id}", async (
+		Guid id,
+		MinimalContextDb context,
+		Provider provider) =>
+{
+	var dataProvider = await context.Providers.FindAsync(id);
+	if (dataProvider == null) return Results.NotFound();
+
+	if (!MiniValidator.TryValidate(provider, out var errors))
+		return Results.ValidationProblem(errors);
+
+	context.Providers.Update(provider);
+	var result = await context.SaveChangesAsync();
+
+	return result > 0
+		? Results.NoContent()
+		: Results.BadRequest("An error occurs while saving the record");
+
+}).ProducesValidationProblem()
+	.Produces(StatusCodes.Status204NoContent)
+	.Produces(StatusCodes.Status400BadRequest)
+	.WithName("PutProvider")
 	.WithTags("Provider");
 
 app.Run();
