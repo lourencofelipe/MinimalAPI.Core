@@ -44,4 +44,16 @@ app.MapGet("/provider/{id}", async (
 	.WithTags("Provider");
 
 
+app.MapPost("/provider", async (
+	MinimalContextDb context,
+	Provider provider) =>
+{ 
+	context.Providers.Add(provider);
+	var result = await context.SaveChangesAsync();
+})
+	.Produces<Provider>(StatusCodes.Status201Created)
+	.Produces(StatusCodes.Status400BadRequest)
+	.WithName("PostProvider")
+	.WithTags("Provider");
+
 app.Run();
