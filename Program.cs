@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MinimalAPI.Core.Data;
 using MinimalAPI.Core.Models;
 using MiniValidation;
+using NetDevPack.Identity;
+using NetDevPack.Identity.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,8 +12,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
 builder.Services.AddDbContext<MinimalContextDb>(options =>
 	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddIdentityEntityFrameworkContextConfiguration(options =>
+	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+	b => b.MigrationsAssembly("MinimalAPI.Core")));
+
+builder.Services.AddIdentityConfiguration();
+builder.Services.AddJwtConfiguration(builder.Configuration, "AppSettings");
+				
 
 var app = builder.Build();
 
@@ -21,6 +33,7 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
+app.UseAuthConfiguration();
 app.UseHttpsRedirection();
 
 app.MapGet("/provider", async (
