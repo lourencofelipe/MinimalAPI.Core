@@ -81,6 +81,45 @@ app.MapPost("/register", async (
   .WithTags("Usuario");
 
 
+app.MapPost("/login", async (
+		SignInManager<IdentityUser> signInManager,
+		UserManager<IdentityUser> userManager,
+		IOptions<AppJwtSettings> appJwtSettings,
+		LoginUser loginUser) =>
+{
+	if (loginUser is null)
+		return Results.BadRequest("User not informed");
+
+	if (!MiniValidator.TryValidate(loginUser, out var errors))
+		return Results.ValidationProblem(errors);
+
+	var result = await signInManager.PasswordSignInAsync(loginUser.Email, loginUser.Password, false, true);
+
+	if (result.IsLockedOut)
+		return Results.BadRequest("Usuário blocked");
+
+	if (!result.Succeeded)
+		return Results.BadRequest("User or invalid password");
+
+	var jwt = new JwtBuilder()
+				.WithUserManager(userManager)
+				.WithJwtSettings(appJwtSettings.Value)
+				.WithEmail(loginUser.Email)
+				.WithJwtClaims()
+				.WithUserClaims()
+				.WithUserRoles()
+				.BuildUserResponse();
+
+	return Results.Ok(jwt);
+
+}).ProducesValidationProblem()
+	  .Produces(StatusCodes.Status200OK)
+	  .Produces(StatusCodes.Status400BadRequest)
+	  .WithName("UserLogin")
+	  .WithTags("User");
+
+
+
 app.MapGet("/provider", async (
 	MinimalContextDb context) =>
 
