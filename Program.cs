@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MinimalAPI.Core.Data;
 using MinimalAPI.Core.Models;
 using MiniValidation;
 using NetDevPack.Identity;
 using NetDevPack.Identity.Jwt;
+using NetDevPack.Identity.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +24,7 @@ builder.Services.AddIdentityEntityFrameworkContextConfiguration(options =>
 
 builder.Services.AddIdentityConfiguration();
 builder.Services.AddJwtConfiguration(builder.Configuration, "AppSettings");
-				
+
 
 var app = builder.Build();
 
@@ -35,6 +37,49 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthConfiguration();
 app.UseHttpsRedirection();
+
+
+app.MapPost("/register", async (
+	SignInManager<IdentityUser> signInManager,
+	UserManager<IdentityUser> userManager,
+	IOptions<AppJwtSettings> appJwtSettings,
+	RegisterUser registerUser
+	) =>
+{
+	if (registerUser is null)
+		return Results.BadRequest("User not informed");
+
+	if (!MiniValidator.TryValidate(registerUser, out var errors))
+		return Results.ValidationProblem(errors);
+
+	var user = new IdentityUser
+	{
+		UserName = registerUser.Email,
+		Email = registerUser.Email,
+		EmailConfirmed = true
+	};
+
+	var result = await userManager.CreateAsync(user, registerUser.Password);
+	if (!result.Succeeded)
+		return Results.BadRequest(result.Errors);
+
+	var jwt = new JwtBuilder()
+					.WithUserManager(userManager)
+					.WithJwtSettings(appJwtSettings.Value)
+					.WithEmail(user.Email)
+					.WithJwtClaims()
+					.WithUserClaims()
+					.WithUserRoles()
+					.BuildUserResponse();
+
+	return Results.Ok(jwt);
+
+}).ProducesValidationProblem()// Meta Data
+  .Produces(StatusCodes.Status200OK)
+  .Produces(StatusCodes.Status400BadRequest)
+  .WithName("RegistroUsuario")
+  .WithTags("Usuario");
+
 
 app.MapGet("/provider", async (
 	MinimalContextDb context) =>
@@ -64,7 +109,7 @@ app.MapPost("/provider", async (
 {
 	if (!MiniValidator.TryValidate(provider, out var errors))
 		return Results.ValidationProblem(errors);
-	
+
 	context.Providers.Add(provider);
 	var result = await context.SaveChangesAsync();
 
