@@ -21,8 +21,8 @@ builder.Services.AddSwaggerGen(c =>
 	c.SwaggerDoc("v1", new OpenApiInfo
 	{
 		Title = "Minimal API",
-		Description = "Developed by Felipe Lourenço",
-		Contact = new OpenApiContact { Name = "Felipe Lourenço", Email = "" },
+		Description = "Developed by Felipe Lourenï¿½o",
+		Contact = new OpenApiContact { Name = "Felipe Lourenï¿½o", Email = "" },
 		License = new OpenApiLicense { Name = "MIT", Url = new Uri("https://opensource.org/licenses/MIT") }
 	});
 
@@ -152,10 +152,10 @@ void MapActions (WebApplication app)
 		var result = await signInManager.PasswordSignInAsync(loginUser.Email, loginUser.Password, false, true);
 
 		if (result.IsLockedOut)
-			return Results.BadRequest("Usuário blocked");
+			return Results.BadRequest("User blocked");
 
 		if (!result.Succeeded)
-			return Results.BadRequest("User or invalid password");
+			return Results.BadRequest("Invalid user or password");
 
 		var jwt = new JwtBuilder()
 					.WithUserManager(userManager)
